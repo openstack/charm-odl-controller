@@ -1,0 +1,37 @@
+<!--
+[ WARNING ]
+Configuration file maintained by Juju. Local changes may be overwritten.
+-->
+<settings>
+  <proxies>
+  {%- if http_proxy %}
+    <proxy>
+      <id>http_proxy</id>
+      <active>true</active>
+      <protocol>http</protocol>
+      <host>{{ http_proxy_host }}</host>
+      <port>{{ http_proxy_port }}</port>
+    {%- if http_proxy_username %}
+      <username>{{ http_proxy_username }}</username>
+      <password>{{ http_proxy_password }}</password>
+    {%- endif %}
+      <nonProxyHosts>{{ http_noproxy|join("|") }}</nonProxyHosts>
+    </proxy>
+  {%- endif %}
+  {%- if https_proxy %}
+    <proxy>
+      <id>https_proxy</id>
+      <active>true</active>
+      <protocol>https</protocol>
+      <host>{{ https_proxy_host }}</host>
+      <port>{{ https_proxy_port }}</port>
+    {%- if https_proxy_username %}
+      <username>{{ https_proxy_username }}</username>
+      <password>{{ https_proxy_password }}</password>
+    {%- endif %}
+      <nonProxyHosts>{{ https_noproxy|join("|") }}</nonProxyHosts>
+    </proxy>
+  {%- endif %}
+  </proxies>
+</settings>
+

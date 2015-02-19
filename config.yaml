@@ -1,0 +1,5 @@
+options:
+  install-url:
+    type: string
+    default: "https://nexus.opendaylight.org/content/groups/public/org/opendaylight/integration/distribution-karaf/0.2.2-Helium-SR2/distribution-karaf-0.2.2-Helium-SR2.tar.gz"
+    description: Install binaries location
