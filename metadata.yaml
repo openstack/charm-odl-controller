@@ -8,3 +8,8 @@ description: |
   This charm provides the controller component.
 categories:
   - openstack
+provides:
+  controller-api:
+    interface: odl-controller-api
+  ovsdb-manager:
+    interface: ovsdb-manager

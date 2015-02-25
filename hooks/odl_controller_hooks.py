@@ -11,7 +11,8 @@ from charmhelpers.core.hookenv import (
     Hooks,
     UnregisteredHookError,
     config,
-    log
+    log,
+    relation_set
 )
 
 from charmhelpers.core.host import (
@@ -35,6 +36,10 @@ config = config()
 @restart_on_change({"/home/opendaylight/.m2/settings.xml": ["odl-controller"]})
 def config_changed():
     write_mvn_config()
+
+@hooks.hook("controller-api-relation-joined")
+def controller_api_joined():
+    relation_set(port=8080, username="admin", password="admin")
 
 @hooks.hook()
 def install():
@@ -67,6 +72,10 @@ def main():
         hooks.execute(sys.argv)
     except UnregisteredHookError as e:
         log("Unknown hook {} - skipping.".format(e))
+
+@hooks.hook("ovsdb-manager-relation-joined")
+def ovsdb_manager_joined():
+    relation_set(port=6640, protocol="tcp")
 
 @hooks.hook("upgrade-charm")
 def upgrade_charm():
