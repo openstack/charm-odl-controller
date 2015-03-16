@@ -61,7 +61,7 @@ def install():
     # install features
     write_mvn_config()
     service_start("odl-controller")
-    check_call(["/opt/opendaylight-karaf/bin/client", "-r", "31",
+    check_call(["/opt/opendaylight-karaf/bin/client", "-r", "61",
                 "feature:install", "odl-base-all", "odl-aaa-authn",
                 "odl-restconf", "odl-nsf-all", "odl-adsal-northbound",
                 "odl-mdsal-apidocs", "odl-ovsdb-openstack",
