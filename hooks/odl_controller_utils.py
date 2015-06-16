@@ -42,7 +42,7 @@ def write_mvn_config():
            "opendaylight", "opendaylight", 0400)
 
 
-def run_odl(cmds, host='localhost', port=8101, retries=20):
+def run_odl(cmds, host="localhost", port=8101, retries=20):
     run_cmd = ["/opt/opendaylight-karaf/bin/client", "-r", str(retries),
                "-h", host, "-a", str(port)]
     run_cmd.extend(cmds)
@@ -52,12 +52,12 @@ def run_odl(cmds, host='localhost', port=8101, retries=20):
 
 def installed_features():
     installed = []
-    out = run_odl(['feature:list'])
-    for line in out.split('\n'):
-        columns = line.split('|')
+    out = run_odl(["feature:list"])
+    for line in out.split("\n"):
+        columns = line.split("|")
         if len(columns) > 2:
             install_flag = columns[2].replace(" ", "")
-            if install_flag == 'x':
+            if install_flag == "x":
                 installed.append(columns[0].replace(" ", ""))
     return installed
 
@@ -69,11 +69,11 @@ def filter_installed(features):
 
 
 def process_odl_cmds(odl_cmds):
-    features = filter_installed(odl_cmds.get('feature:install', []))
+    features = filter_installed(odl_cmds.get("feature:install", []))
     if features:
-        run_odl(['feature:install'] + features)
-    logging = odl_cmds.get('log:set')
+        run_odl(["feature:install"] + features)
+    logging = odl_cmds.get("log:set")
     if logging:
         for log_level in logging.keys():
             for target in logging[log_level]:
-                run_odl(['log:set', log_level, target])
+                run_odl(["log:set", log_level, target])

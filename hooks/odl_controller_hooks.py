@@ -49,10 +49,10 @@ def controller_api_joined():
 
 @hooks.hook("controller-api-relation-changed")
 def controller_api_changed():
-    for rid in relation_ids('controller-api'):
+    for rid in relation_ids("controller-api"):
         for unit in related_units(rid):
             odl_cmds_json = relation_get(rid=rid, unit=unit,
-                                         attribute='odl-cmds')
+                                         attribute="odl-cmds")
             if odl_cmds_json:
                 odl_cmds = json.loads(odl_cmds_json)
                 process_odl_cmds(odl_cmds)
