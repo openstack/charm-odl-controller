@@ -22,7 +22,6 @@ from charmhelpers.core.hookenv import (
 from charmhelpers.core.host import (
     adduser,
     mkdir,
-    service_restart,
     restart_on_change,
     service_start
 )
@@ -36,23 +35,28 @@ PACKAGES = ["default-jre-headless", "python-jinja2"]
 hooks = Hooks()
 config = config()
 
+
 @hooks.hook("config-changed")
 @restart_on_change({"/home/opendaylight/.m2/settings.xml": ["odl-controller"]})
 def config_changed():
     write_mvn_config()
 
+
 @hooks.hook("controller-api-relation-joined")
 def controller_api_joined():
     relation_set(port=8080, username="admin", password="admin")
+
 
 @hooks.hook("controller-api-relation-changed")
 def controller_api_changed():
     for rid in relation_ids('controller-api'):
         for unit in related_units(rid):
-            odl_cmds_json = relation_get(rid=rid, unit=unit, attribute='odl-cmds')
+            odl_cmds_json = relation_get(rid=rid, unit=unit,
+                                         attribute='odl-cmds')
             if odl_cmds_json:
                 odl_cmds = json.loads(odl_cmds_json)
                 process_odl_cmds(odl_cmds)
+
 
 @hooks.hook()
 def install():
@@ -67,13 +71,16 @@ def install():
     os.symlink(name, "/opt/opendaylight-karaf")
     shutil.copy("files/odl-controller.conf", "/etc/init")
     adduser("opendaylight", system_user=True)
-    mkdir("/home/opendaylight", owner="opendaylight", group="opendaylight", perms=0755)
+    mkdir("/home/opendaylight", owner="opendaylight", group="opendaylight",
+          perms=0755)
     check_call(["chown", "-R", "opendaylight:opendaylight", "/opt/" + name])
-    mkdir("/var/log/opendaylight", owner="opendaylight", group="opendaylight", perms=0755)
+    mkdir("/var/log/opendaylight", owner="opendaylight", group="opendaylight",
+          perms=0755)
 
     # install features
     write_mvn_config()
     service_start("odl-controller")
+
 
 def main():
     try:
@@ -81,9 +88,11 @@ def main():
     except UnregisteredHookError as e:
         log("Unknown hook {} - skipping.".format(e))
 
+
 @hooks.hook("ovsdb-manager-relation-joined")
 def ovsdb_manager_joined():
     relation_set(port=6640, protocol="tcp")
+
 
 @hooks.hook("upgrade-charm")
 def upgrade_charm():

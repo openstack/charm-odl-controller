@@ -1,15 +1,16 @@
 import subprocess
-import json
 from os import environ
 import urlparse
 
 from charmhelpers.core.templating import render
+
 
 def mvn_ctx():
     ctx = {}
     ctx.update(mvn_proxy_ctx("http"))
     ctx.update(mvn_proxy_ctx("https"))
     return ctx
+
 
 def mvn_proxy_ctx(protocol):
     ctx = {}
@@ -34,16 +35,20 @@ def mvn_proxy_ctx(protocol):
             ctx[protocol + "_noproxy"] = no_proxy
     return ctx
 
+
 def write_mvn_config():
     ctx = mvn_ctx()
     render("settings.xml", "/home/opendaylight/.m2/settings.xml", ctx,
            "opendaylight", "opendaylight", 0400)
 
+
 def run_odl(cmds, host='localhost', port=8101, retries=20):
-    run_cmd = ["/opt/opendaylight-karaf/bin/client", "-r", str(retries), "-h", host, "-a", str(port)]
-    run_cmd.extend(cmds) 
+    run_cmd = ["/opt/opendaylight-karaf/bin/client", "-r", str(retries),
+               "-h", host, "-a", str(port)]
+    run_cmd.extend(cmds)
     output = subprocess.check_output(run_cmd)
-    return output 
+    return output
+
 
 def installed_features():
     installed = []
@@ -56,16 +61,18 @@ def installed_features():
                 installed.append(columns[0].replace(" ", ""))
     return installed
 
+
 def filter_installed(features):
     installed = installed_features()
-    whitelist = [ feature for feature in features if feature not in installed]
+    whitelist = [feature for feature in features if feature not in installed]
     return whitelist
 
+
 def process_odl_cmds(odl_cmds):
-    features =  filter_installed(cmd_dics.get('feature:install', []))
+    features = filter_installed(odl_cmds.get('feature:install', []))
     if features:
         run_odl(['feature:install'] + features)
-    logging = cmd_dics.get('log:set')
+    logging = odl_cmds.get('log:set')
     if logging:
         for log_level in logging.keys():
             for target in logging[log_level]:
