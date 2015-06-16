@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import json
 import os
 import re
 import shutil
@@ -12,22 +13,25 @@ from charmhelpers.core.hookenv import (
     UnregisteredHookError,
     config,
     log,
-    relation_set
+    relation_get,
+    relation_ids,
+    relation_set,
+    related_units,
 )
 
 from charmhelpers.core.host import (
     adduser,
     mkdir,
-    restart_on_change,
     service_restart,
+    restart_on_change,
     service_start
 )
 
 from charmhelpers.fetch import apt_install, install_remote
 
-from odl_controller_utils import write_mvn_config
+from odl_controller_utils import write_mvn_config, process_odl_cmds
 
-PACKAGES = [ "default-jre-headless", "python-jinja2" ]
+PACKAGES = ["default-jre-headless", "python-jinja2"]
 
 hooks = Hooks()
 config = config()
@@ -40,6 +44,15 @@ def config_changed():
 @hooks.hook("controller-api-relation-joined")
 def controller_api_joined():
     relation_set(port=8080, username="admin", password="admin")
+
+@hooks.hook("controller-api-relation-changed")
+def controller_api_changed():
+    for rid in relation_ids('controller-api'):
+        for unit in related_units(rid):
+            odl_cmds_json = relation_get(rid=rid, unit=unit, attribute='odl-cmds')
+            if odl_cmds_json:
+                odl_cmds = json.loads(odl_cmds_json)
+                process_odl_cmds(odl_cmds)
 
 @hooks.hook()
 def install():
@@ -61,11 +74,6 @@ def install():
     # install features
     write_mvn_config()
     service_start("odl-controller")
-    check_call(["/opt/opendaylight-karaf/bin/client", "-r", "61",
-                "feature:install", "odl-base-all", "odl-aaa-authn",
-                "odl-restconf", "odl-nsf-all", "odl-adsal-northbound",
-                "odl-mdsal-apidocs", "odl-ovsdb-openstack",
-                "odl-ovsdb-northbound", "odl-dlux-core"])
 
 def main():
     try:
