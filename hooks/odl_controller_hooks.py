@@ -39,7 +39,7 @@ def config_changed():
 
 @hooks.hook("controller-api-relation-joined")
 def controller_api_joined():
-    relation_set(port=8080, username="admin", password="admin")
+    relation_set(port=8181, username="admin", password="admin")
 
 @hooks.hook()
 def install():
