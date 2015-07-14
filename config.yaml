@@ -1,5 +1,23 @@
 options:
+  profile:
+    type: string
+    default: default
+    description: |
+      SDN controller profile to configure OpenDayLight for; supported values include
+      
+        cisco-vpp: Cisco VPP for OpenStack
+        openvswitch-odl: Open vSwitch OpenDayLight for OpenStack
+      
+      Only a single profile is supported at any one time.
   install-url:
     type: string
     default: "https://nexus.opendaylight.org/content/groups/public/org/opendaylight/integration/distribution-karaf/0.2.2-Helium-SR2/distribution-karaf-0.2.2-Helium-SR2.tar.gz"
-    description: Install binaries location
+    description: Web addressable location of OpenDayLight binaries to install
+  http-proxy:
+    type: string
+    default:
+    description: Proxy to use for http connections for OpenDayLight
+  https-proxy:
+    type: string
+    default:
+    description: Proxy to use for https connections for OpenDayLight
