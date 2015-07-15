@@ -7,27 +7,27 @@ from charmhelpers.core.hookenv import config
 
 
 PROFILES = {
-    'cisco-vpp': {
-        'feature:install': ['cosc-cvpn-ovs-rest',
-                            'odl-netconf-connector-all'],
-        'log:set': {
-            'TRACE': ['cosc-cvpn-ovs-rest',
-                      'odl-netconf-connector-all'],
+    "cisco-vpp": {
+        "feature:install": ["cosc-cvpn-ovs-rest",
+                            "odl-netconf-connector-all"],
+        "log:set": {
+            "TRACE": ["cosc-cvpn-ovs-rest",
+                      "odl-netconf-connector-all"],
         },
-        'port': 8181
+        "port": 8181
     },
-    'openvswitch-odl': {
-        'feature:install': ["odl-base-all", "odl-aaa-authn",
+    "openvswitch-odl": {
+        "feature:install": ["odl-base-all", "odl-aaa-authn",
                             "odl-restconf", "odl-nsf-all",
                             "odl-adsal-northbound",
                             "odl-mdsal-apidocs",
                             "odl-ovsdb-openstack",
                             "odl-ovsdb-northbound",
                             "odl-dlux-core"],
-        'port': 8080
+        "port": 8080
     }
 }
-PROFILES['default'] = PROFILES['openvswitch-odl']
+PROFILES["default"] = PROFILES["openvswitch-odl"]
 
 
 def mvn_ctx():
@@ -39,7 +39,7 @@ def mvn_ctx():
 
 def mvn_proxy_ctx(protocol):
     ctx = {}
-    proxy = config('%s-proxy' % protocol)
+    proxy = config("{}-proxy".format(protocol))
     key = protocol + "_proxy"
     if proxy:
         url = urlparse.urlparse(proxy)

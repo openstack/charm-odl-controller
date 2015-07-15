@@ -37,8 +37,8 @@ config = config()
 @hooks.hook("config-changed")
 @restart_on_change({"/home/opendaylight/.m2/settings.xml": ["odl-controller"]})
 def config_changed():
-    process_odl_cmds(PROFILES[config['profile']])
-    for r_id in relation_ids('controller-api'):
+    process_odl_cmds(PROFILES[config["profile"]])
+    for r_id in relation_ids("controller-api"):
         controller_api_joined(r_id)
     write_mvn_config()
 
@@ -46,7 +46,7 @@ def config_changed():
 @hooks.hook("controller-api-relation-joined")
 def controller_api_joined(r_id=None):
     relation_set(relation_id=r_id,
-                 port=PROFILES[config['profile']]['port'],
+                 port=PROFILES[config["profile"]]["port"],
                  username="admin", password="admin")
 
 
