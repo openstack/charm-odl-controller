@@ -16,6 +16,7 @@
 
 # Various utilies for dealing with Neutron and the renaming from Quantum.
 
+import six
 from subprocess import check_output
 
 from charmhelpers.core.hookenv import (
@@ -171,13 +172,28 @@ def neutron_plugins():
             'services': ['calico-felix',
                          'bird',
                          'neutron-dhcp-agent',
-                         'nova-api-metadata'],
+                         'nova-api-metadata',
+                         'etcd'],
             'packages': [[headers_package()] + determine_dkms_package(),
                          ['calico-compute',
                           'bird',
                           'neutron-dhcp-agent',
-                          'nova-api-metadata']],
-            'server_packages': ['neutron-server', 'calico-control'],
+                          'nova-api-metadata',
+                          'etcd']],
+            'server_packages': ['neutron-server', 'calico-control', 'etcd'],
+            'server_services': ['neutron-server', 'etcd']
+        },
+        'vsp': {
+            'config': '/etc/neutron/plugins/nuage/nuage_plugin.ini',
+            'driver': 'neutron.plugins.nuage.plugin.NuagePlugin',
+            'contexts': [
+                context.SharedDBContext(user=config('neutron-database-user'),
+                                        database=config('neutron-database'),
+                                        relation_prefix='neutron',
+                                        ssl_dir=NEUTRON_CONF_DIR)],
+            'services': [],
+            'packages': [],
+            'server_packages': ['neutron-server', 'neutron-plugin-nuage'],
             'server_services': ['neutron-server']
         }
     }
@@ -237,3 +253,77 @@ def network_manager():
     else:
         # ensure accurate naming for all releases post-H
         return 'neutron'
+
+
+def parse_mappings(mappings):
+    parsed = {}
+    if mappings:
+        mappings = mappings.split()
+        for m in mappings:
+            p = m.partition(':')
+            key = p[0].strip()
+            if p[1]:
+                parsed[key] = p[2].strip()
+            else:
+                parsed[key] = ''
+
+    return parsed
+
+
+def parse_bridge_mappings(mappings):
+    """Parse bridge mappings.
+
+    Mappings must be a space-delimited list of provider:bridge mappings.
+
+    Returns dict of the form {provider:bridge}.
+    """
+    return parse_mappings(mappings)
+
+
+def parse_data_port_mappings(mappings, default_bridge='br-data'):
+    """Parse data port mappings.
+
+    Mappings must be a space-delimited list of bridge:port mappings.
+
+    Returns dict of the form {bridge:port}.
+    """
+    _mappings = parse_mappings(mappings)
+    if not _mappings or list(_mappings.values()) == ['']:
+        if not mappings:
+            return {}
+
+        # For backwards-compatibility we need to support port-only provided in
+        # config.
+        _mappings = {default_bridge: mappings.split()[0]}
+
+    bridges = _mappings.keys()
+    ports = _mappings.values()
+    if len(set(bridges)) != len(bridges):
+        raise Exception("It is not allowed to have more than one port "
+                        "configured on the same bridge")
+
+    if len(set(ports)) != len(ports):
+        raise Exception("It is not allowed to have the same port configured "
+                        "on more than one bridge")
+
+    return _mappings
+
+
+def parse_vlan_range_mappings(mappings):
+    """Parse vlan range mappings.
+
+    Mappings must be a space-delimited list of provider:start:end mappings.
+
+    The start:end range is optional and may be omitted.
+
+    Returns dict of the form {provider: (start, end)}.
+    """
+    _mappings = parse_mappings(mappings)
+    if not _mappings:
+        return {}
+
+    mappings = {}
+    for p, r in six.iteritems(_mappings):
+        mappings[p] = tuple(r.split(':'))
+
+    return mappings
