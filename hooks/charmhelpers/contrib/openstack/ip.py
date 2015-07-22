@@ -17,6 +17,7 @@
 from charmhelpers.core.hookenv import (
     config,
     unit_get,
+    service_name,
 )
 from charmhelpers.contrib.network.ip import (
     get_address_in_network,
@@ -33,15 +34,18 @@ ADMIN = 'admin'
 ADDRESS_MAP = {
     PUBLIC: {
         'config': 'os-public-network',
-        'fallback': 'public-address'
+        'fallback': 'public-address',
+        'override': 'os-public-hostname',
     },
     INTERNAL: {
         'config': 'os-internal-network',
-        'fallback': 'private-address'
+        'fallback': 'private-address',
+        'override': 'os-internal-hostname',
     },
     ADMIN: {
         'config': 'os-admin-network',
-        'fallback': 'private-address'
+        'fallback': 'private-address',
+        'override': 'os-admin-hostname',
     }
 }
 
@@ -55,13 +59,48 @@ def canonical_url(configs, endpoint_type=PUBLIC):
     :param endpoint_type: str endpoint type to resolve.
     :param returns: str base URL for services on the current service unit.
     """
-    scheme = 'http'
-    if 'https' in configs.complete_contexts():
-        scheme = 'https'
+    scheme = _get_scheme(configs)
+
     address = resolve_address(endpoint_type)
     if is_ipv6(address):
         address = "[{}]".format(address)
+
     return '%s://%s' % (scheme, address)
+
+
+def _get_scheme(configs):
+    """Returns the scheme to use for the url (either http or https)
+    depending upon whether https is in the configs value.
+
+    :param configs: OSTemplateRenderer config templating object to inspect
+                    for a complete https context.
+    :returns: either 'http' or 'https' depending on whether https is
+              configured within the configs context.
+    """
+    scheme = 'http'
+    if configs and 'https' in configs.complete_contexts():
+        scheme = 'https'
+    return scheme
+
+
+def _get_address_override(endpoint_type=PUBLIC):
+    """Returns any address overrides that the user has defined based on the
+    endpoint type.
+
+    Note: this function allows for the service name to be inserted into the
+    address if the user specifies {service_name}.somehost.org.
+
+    :param endpoint_type: the type of endpoint to retrieve the override
+                          value for.
+    :returns: any endpoint address or hostname that the user has overridden
+              or None if an override is not present.
+    """
+    override_key = ADDRESS_MAP[endpoint_type]['override']
+    addr_override = config(override_key)
+    if not addr_override:
+        return None
+    else:
+        return addr_override.format(service_name=service_name())
 
 
 def resolve_address(endpoint_type=PUBLIC):
@@ -75,7 +114,10 @@ def resolve_address(endpoint_type=PUBLIC):
 
     :param endpoint_type: Network endpoing type
     """
-    resolved_address = None
+    resolved_address = _get_address_override(endpoint_type)
+    if resolved_address:
+        return resolved_address
+
     vips = config('vip')
     if vips:
         vips = vips.split()

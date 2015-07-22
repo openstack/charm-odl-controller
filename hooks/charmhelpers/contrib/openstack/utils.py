@@ -23,11 +23,16 @@ from functools import wraps
 import subprocess
 import json
 import os
-import socket
 import sys
 
 import six
 import yaml
+
+from charmhelpers.contrib.network import ip
+
+from charmhelpers.core import (
+    unitdata,
+)
 
 from charmhelpers.core.hookenv import (
     config,
@@ -48,9 +53,13 @@ from charmhelpers.contrib.network.ip import (
     get_ipv6_addr
 )
 
+from charmhelpers.contrib.python.packages import (
+    pip_create_virtualenv,
+    pip_install,
+)
+
 from charmhelpers.core.host import lsb_release, mounts, umount
 from charmhelpers.fetch import apt_install, apt_cache, install_remote
-from charmhelpers.contrib.python.packages import pip_install
 from charmhelpers.contrib.storage.linux.utils import is_block_device, zap_disk
 from charmhelpers.contrib.storage.linux.loopback import ensure_loopback_device
 
@@ -70,6 +79,7 @@ UBUNTU_OPENSTACK_RELEASE = OrderedDict([
     ('trusty', 'icehouse'),
     ('utopic', 'juno'),
     ('vivid', 'kilo'),
+    ('wily', 'liberty'),
 ])
 
 
@@ -82,6 +92,7 @@ OPENSTACK_CODENAMES = OrderedDict([
     ('2014.1', 'icehouse'),
     ('2014.2', 'juno'),
     ('2015.1', 'kilo'),
+    ('2015.2', 'liberty'),
 ])
 
 # The ugly duckling
@@ -103,6 +114,8 @@ SWIFT_CODENAMES = OrderedDict([
     ('2.1.0', 'juno'),
     ('2.2.0', 'juno'),
     ('2.2.1', 'kilo'),
+    ('2.2.2', 'kilo'),
+    ('2.3.0', 'liberty'),
 ])
 
 DEFAULT_LOOPBACK_SIZE = '5G'
@@ -311,6 +324,9 @@ def configure_installation_source(rel):
             'kilo': 'trusty-updates/kilo',
             'kilo/updates': 'trusty-updates/kilo',
             'kilo/proposed': 'trusty-proposed/kilo',
+            'liberty': 'trusty-updates/liberty',
+            'liberty/updates': 'trusty-updates/liberty',
+            'liberty/proposed': 'trusty-proposed/liberty',
         }
 
         try:
@@ -326,6 +342,21 @@ def configure_installation_source(rel):
             f.write(src)
     else:
         error_out("Invalid openstack-release specified: %s" % rel)
+
+
+def config_value_changed(option):
+    """
+    Determine if config value changed since last call to this function.
+    """
+    hook_data = unitdata.HookData()
+    with hook_data():
+        db = unitdata.kv()
+        current = config(option)
+        saved = db.get(option)
+        db.set(option, current)
+        if saved is None:
+            return False
+        return current != saved
 
 
 def save_script_rc(script_path="scripts/scriptrc", **env_vars):
@@ -420,77 +451,10 @@ def clean_storage(block_device):
     else:
         zap_disk(block_device)
 
-
-def is_ip(address):
-    """
-    Returns True if address is a valid IP address.
-    """
-    try:
-        # Test to see if already an IPv4 address
-        socket.inet_aton(address)
-        return True
-    except socket.error:
-        return False
-
-
-def ns_query(address):
-    try:
-        import dns.resolver
-    except ImportError:
-        apt_install('python-dnspython')
-        import dns.resolver
-
-    if isinstance(address, dns.name.Name):
-        rtype = 'PTR'
-    elif isinstance(address, six.string_types):
-        rtype = 'A'
-    else:
-        return None
-
-    answers = dns.resolver.query(address, rtype)
-    if answers:
-        return str(answers[0])
-    return None
-
-
-def get_host_ip(hostname):
-    """
-    Resolves the IP for a given hostname, or returns
-    the input if it is already an IP.
-    """
-    if is_ip(hostname):
-        return hostname
-
-    return ns_query(hostname)
-
-
-def get_hostname(address, fqdn=True):
-    """
-    Resolves hostname for given IP, or returns the input
-    if it is already a hostname.
-    """
-    if is_ip(address):
-        try:
-            import dns.reversename
-        except ImportError:
-            apt_install('python-dnspython')
-            import dns.reversename
-
-        rev = dns.reversename.from_address(address)
-        result = ns_query(rev)
-        if not result:
-            return None
-    else:
-        result = address
-
-    if fqdn:
-        # strip trailing .
-        if result.endswith('.'):
-            return result[:-1]
-        else:
-            return result
-    else:
-        return result.split('.')[0]
+is_ip = ip.is_ip
+ns_query = ip.ns_query
+get_host_ip = ip.get_host_ip
+get_hostname = ip.get_hostname
 
 
 def get_matchmaker_map(mm_file='/etc/oslo/matchmaker_ring.json'):
@@ -534,108 +498,209 @@ def os_requires_version(ostack_release, pkg):
 
 
 def git_install_requested():
-    """Returns true if openstack-origin-git is specified."""
-    return config('openstack-origin-git') != "None"
+    """
+    Returns true if openstack-origin-git is specified.
+    """
+    return config('openstack-origin-git') is not None
 
 
 requirements_dir = None
 
 
-def git_clone_and_install(file_name, core_project):
-    """Clone/install all OpenStack repos specified in yaml config file."""
+def _git_yaml_load(projects_yaml):
+    """
+    Load the specified yaml into a dictionary.
+    """
+    if not projects_yaml:
+        return None
+
+    return yaml.load(projects_yaml)
+
+
+def git_clone_and_install(projects_yaml, core_project, depth=1):
+    """
+    Clone/install all specified OpenStack repositories.
+
+    The expected format of projects_yaml is:
+
+        repositories:
+          - {name: keystone,
+             repository: 'git://git.openstack.org/openstack/keystone.git',
+             branch: 'stable/icehouse'}
+          - {name: requirements,
+             repository: 'git://git.openstack.org/openstack/requirements.git',
+             branch: 'stable/icehouse'}
+
+        directory: /mnt/openstack-git
+        http_proxy: squid-proxy-url
+        https_proxy: squid-proxy-url
+
+    The directory, http_proxy, and https_proxy keys are optional.
+
+    """
     global requirements_dir
+    parent_dir = '/mnt/openstack-git'
+    http_proxy = None
 
-    if file_name == "None":
-        return
+    projects = _git_yaml_load(projects_yaml)
+    _git_validate_projects_yaml(projects, core_project)
 
-    yaml_file = os.path.join(charm_dir(), file_name)
+    old_environ = dict(os.environ)
 
-    # clone/install the requirements project first
-    installed = _git_clone_and_install_subset(yaml_file,
-                                              whitelist=['requirements'])
-    if 'requirements' not in installed:
-        error_out('requirements git repository must be specified')
+    if 'http_proxy' in projects.keys():
+        http_proxy = projects['http_proxy']
+        os.environ['http_proxy'] = projects['http_proxy']
+    if 'https_proxy' in projects.keys():
+        os.environ['https_proxy'] = projects['https_proxy']
 
-    # clone/install all other projects except requirements and the core project
-    blacklist = ['requirements', core_project]
-    _git_clone_and_install_subset(yaml_file, blacklist=blacklist,
-                                  update_requirements=True)
+    if 'directory' in projects.keys():
+        parent_dir = projects['directory']
 
-    # clone/install the core project
-    whitelist = [core_project]
-    installed = _git_clone_and_install_subset(yaml_file, whitelist=whitelist,
-                                              update_requirements=True)
-    if core_project not in installed:
-        error_out('{} git repository must be specified'.format(core_project))
+    pip_create_virtualenv(os.path.join(parent_dir, 'venv'))
 
+    # Upgrade setuptools and pip from default virtualenv versions. The default
+    # versions in trusty break master OpenStack branch deployments.
+    for p in ['pip', 'setuptools']:
+        pip_install(p, upgrade=True, proxy=http_proxy,
+                    venv=os.path.join(parent_dir, 'venv'))
 
-def _git_clone_and_install_subset(yaml_file, whitelist=[], blacklist=[],
-                                  update_requirements=False):
-    """Clone/install subset of OpenStack repos specified in yaml config file."""
-    global requirements_dir
-    installed = []
+    for p in projects['repositories']:
+        repo = p['repository']
+        branch = p['branch']
+        if p['name'] == 'requirements':
+            repo_dir = _git_clone_and_install_single(repo, branch, depth,
+                                                     parent_dir, http_proxy,
+                                                     update_requirements=False)
+            requirements_dir = repo_dir
+        else:
+            repo_dir = _git_clone_and_install_single(repo, branch, depth,
+                                                     parent_dir, http_proxy,
+                                                     update_requirements=True)
 
-    with open(yaml_file, 'r') as fd:
-        projects = yaml.load(fd)
-        for proj, val in projects.items():
-            # The project subset is chosen based on the following 3 rules:
-            # 1) If project is in blacklist, we don't clone/install it, period.
-            # 2) If whitelist is empty, we clone/install everything else.
-            # 3) If whitelist is not empty, we clone/install everything in the
-            #    whitelist.
-            if proj in blacklist:
-                continue
-            if whitelist and proj not in whitelist:
-                continue
-            repo = val['repository']
-            branch = val['branch']
-            repo_dir = _git_clone_and_install_single(repo, branch,
-                                                     update_requirements)
-            if proj == 'requirements':
-                requirements_dir = repo_dir
-            installed.append(proj)
-    return installed
+    os.environ = old_environ
 
 
-def _git_clone_and_install_single(repo, branch, update_requirements=False):
-    """Clone and install a single git repository."""
-    dest_parent_dir = "/mnt/openstack-git/"
-    dest_dir = os.path.join(dest_parent_dir, os.path.basename(repo))
+def _git_validate_projects_yaml(projects, core_project):
+    """
+    Validate the projects yaml.
+    """
+    _git_ensure_key_exists('repositories', projects)
 
-    if not os.path.exists(dest_parent_dir):
-        juju_log('Host dir not mounted at {}. '
-                 'Creating directory there instead.'.format(dest_parent_dir))
-        os.mkdir(dest_parent_dir)
+    for project in projects['repositories']:
+        _git_ensure_key_exists('name', project.keys())
+        _git_ensure_key_exists('repository', project.keys())
+        _git_ensure_key_exists('branch', project.keys())
+
+    if projects['repositories'][0]['name'] != 'requirements':
+        error_out('{} git repo must be specified first'.format('requirements'))
+
+    if projects['repositories'][-1]['name'] != core_project:
+        error_out('{} git repo must be specified last'.format(core_project))
+
+
+def _git_ensure_key_exists(key, keys):
+    """
+    Ensure that key exists in keys.
+    """
+    if key not in keys:
+        error_out('openstack-origin-git key \'{}\' is missing'.format(key))
+
+
+def _git_clone_and_install_single(repo, branch, depth, parent_dir, http_proxy,
+                                  update_requirements):
+    """
+    Clone and install a single git repository.
+    """
+    dest_dir = os.path.join(parent_dir, os.path.basename(repo))
+
+    if not os.path.exists(parent_dir):
+        juju_log('Directory already exists at {}. '
+                 'No need to create directory.'.format(parent_dir))
+        os.mkdir(parent_dir)
 
     if not os.path.exists(dest_dir):
         juju_log('Cloning git repo: {}, branch: {}'.format(repo, branch))
-        repo_dir = install_remote(repo, dest=dest_parent_dir, branch=branch)
+        repo_dir = install_remote(repo, dest=parent_dir, branch=branch,
+                                  depth=depth)
     else:
         repo_dir = dest_dir
+
+    venv = os.path.join(parent_dir, 'venv')
 
     if update_requirements:
         if not requirements_dir:
             error_out('requirements repo must be cloned before '
                       'updating from global requirements.')
-        _git_update_requirements(repo_dir, requirements_dir)
+        _git_update_requirements(venv, repo_dir, requirements_dir)
 
     juju_log('Installing git repo from dir: {}'.format(repo_dir))
-    pip_install(repo_dir)
+    if http_proxy:
+        pip_install(repo_dir, proxy=http_proxy, venv=venv)
+    else:
+        pip_install(repo_dir, venv=venv)
 
     return repo_dir
 
 
-def _git_update_requirements(package_dir, reqs_dir):
-    """Update from global requirements.
+def _git_update_requirements(venv, package_dir, reqs_dir):
+    """
+    Update from global requirements.
 
-       Update an OpenStack git directory's requirements.txt and
-       test-requirements.txt from global-requirements.txt."""
+    Update an OpenStack git directory's requirements.txt and
+    test-requirements.txt from global-requirements.txt.
+    """
     orig_dir = os.getcwd()
     os.chdir(reqs_dir)
-    cmd = "python update.py {}".format(package_dir)
+    python = os.path.join(venv, 'bin/python')
+    cmd = [python, 'update.py', package_dir]
     try:
-        subprocess.check_call(cmd.split(' '))
+        subprocess.check_call(cmd)
     except subprocess.CalledProcessError:
         package = os.path.basename(package_dir)
-        error_out("Error updating {} from global-requirements.txt".format(package))
+        error_out("Error updating {} from "
+                  "global-requirements.txt".format(package))
     os.chdir(orig_dir)
+
+
+def git_pip_venv_dir(projects_yaml):
+    """
+    Return the pip virtualenv path.
+    """
+    parent_dir = '/mnt/openstack-git'
+
+    projects = _git_yaml_load(projects_yaml)
+
+    if 'directory' in projects.keys():
+        parent_dir = projects['directory']
+
+    return os.path.join(parent_dir, 'venv')
+
+
+def git_src_dir(projects_yaml, project):
+    """
+    Return the directory where the specified project's source is located.
+    """
+    parent_dir = '/mnt/openstack-git'
+
+    projects = _git_yaml_load(projects_yaml)
+
+    if 'directory' in projects.keys():
+        parent_dir = projects['directory']
+
+    for p in projects['repositories']:
+        if p['name'] == project:
+            return os.path.join(parent_dir, os.path.basename(p['repository']))
+
+    return None
+
+
+def git_yaml_value(projects_yaml, key):
+    """
+    Return the value in projects_yaml for the specified key.
+    """
+    projects = _git_yaml_load(projects_yaml)
+
+    if key in projects.keys():
+        return projects[key]
+
+    return None
