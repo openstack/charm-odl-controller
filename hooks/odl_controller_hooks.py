@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
 import os
-import re
 import shutil
 from subprocess import check_call
 import sys
-import urlparse
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -57,11 +55,16 @@ def install():
 
     # install opendaylight
     install_url = config["install-url"]
-    install_remote(install_url, dest="/opt")
-    filename = re.sub("^.*/", "", urlparse.urlparse(install_url)[2])
-    name = re.sub("\.tar\.gz$|\.tar$|\.gz$|\.zip$", "", filename)
+    install_remote(install_url, dest="/opt")  # this extracts the archive too
+
+    # The extracted dirname. Look at what's on disk instead of mangling, so
+    # the distribution tar.gz's name doesn't matter.
+    name = [f for f in os.listdir("/opt")
+            if f.startswith("distribution-karaf")]
+
     if not os.path.exists("/opt/opendaylight-karaf"):
         os.symlink(name, "/opt/opendaylight-karaf")
+
     shutil.copy("files/odl-controller.conf", "/etc/init")
     adduser("opendaylight", system_user=True)
     mkdir("/home/opendaylight", owner="opendaylight", group="opendaylight",
