@@ -75,7 +75,7 @@ def write_mvn_config():
            "opendaylight", "opendaylight", 0400)
 
 
-@retry_on_exception(6, base_delay=30, exc_type=subprocess.CalledProcessError)
+@retry_on_exception(5, base_delay=10, exc_type=subprocess.CalledProcessError)
 def run_odl(cmds, host="localhost", port=8101, retries=20):
     run_cmd = ["/opt/opendaylight-karaf/bin/client", "-r", str(retries),
                "-h", host, "-a", str(port)]
