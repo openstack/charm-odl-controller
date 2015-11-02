@@ -21,12 +21,14 @@ from charmhelpers.core.host import (
     service_start
 )
 
-from charmhelpers.fetch import apt_install, install_remote
+from charmhelpers.fetch import (
+    add_source, apt_update, apt_install, install_remote)
 
 from odl_controller_utils import write_mvn_config, process_odl_cmds
 from odl_controller_utils import PROFILES
 
 PACKAGES = ["default-jre-headless", "python-jinja2"]
+KARAF_PACKAGE = "opendaylight-karaf"
 
 hooks = Hooks()
 config = config()
@@ -50,20 +52,28 @@ def controller_api_joined(r_id=None):
 
 @hooks.hook()
 def install():
-    # install dependencies
+    packages = PACKAGES.copy()
+
+    install_origin = config["install-origin"]
+    if install_origin:
+        add_source(install_origin)
+        packages.append(KARAF_PACKAGE)
+        apt_update(fatal=True)
+
+    # install packages
     apt_install(PACKAGES, fatal=True)
 
-    # install opendaylight
-    install_url = config["install-url"]
-    install_remote(install_url, dest="/opt")  # this extracts the archive too
-
-    # The extracted dirname. Look at what's on disk instead of mangling, so
-    # the distribution tar.gz's name doesn't matter.
-    name = [f for f in os.listdir("/opt")
-            if f.startswith("distribution-karaf")][0]
-
-    if not os.path.exists("/opt/opendaylight-karaf"):
-        os.symlink(name, "/opt/opendaylight-karaf")
+    if not install_origin:
+        # install opendaylight from tarball
+        install_url = config["install-url"]
+        # this extracts the archive too
+        install_remote(install_url, dest="/opt")
+        # The extracted dirname. Look at what's on disk instead of mangling, so
+        # the distribution tar.gz's name doesn't matter.
+        name = [f for f in os.listdir("/opt")
+                if f.startswith("distribution-karaf")][0]
+        if not os.path.exists("/opt/opendaylight-karaf"):
+            os.symlink(name, "/opt/opendaylight-karaf")
 
     shutil.copy("files/odl-controller.conf", "/etc/init")
     adduser("opendaylight", system_user=True)
