@@ -53,7 +53,7 @@ def controller_api_joined(r_id=None):
 @hooks.hook()
 def install():
     if config["install-sources"]:
-        configure_sources(update=True, install_key="install_sources")
+        configure_sources(update=True, sources_var="install_sources")
 
     # install packages
     apt_install(PACKAGES, fatal=True)
