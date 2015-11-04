@@ -12,16 +12,16 @@ options:
   install-url:
     type: string
     default: "https://nexus.opendaylight.org/content/groups/public/org/opendaylight/integration/distribution-karaf/0.2.2-Helium-SR2/distribution-karaf-0.2.2-Helium-SR2.tar.gz"
-    description: Web addressable location of OpenDayLight binaries to install
-  install-origin:
-    type: string
-    default: ""
     description: |
-      Repository to install OpenDaylight binaries from. It can be a full APT
-      URL or a PPA.
+      Web addressable location of OpenDayLight binaries to install.
 
-      If not specified, the package is installed from the URL specified by the
-      'install-url' option.
+      If unset, the charm will install binaries from the opendaylight-karaf
+      package.
+  install-sources:
+    type: string
+    description: |
+      Package sources to install. Can be used to specify where to isntall the
+      opendaylight-karaf package from.
   http-proxy:
     type: string
     default:

@@ -22,7 +22,7 @@ from charmhelpers.core.host import (
 )
 
 from charmhelpers.fetch import (
-    add_source, apt_update, apt_install, install_remote)
+    configure_sources, apt_install, install_remote)
 
 from odl_controller_utils import write_mvn_config, process_odl_cmds
 from odl_controller_utils import PROFILES
@@ -52,22 +52,16 @@ def controller_api_joined(r_id=None):
 
 @hooks.hook()
 def install():
-    packages = PACKAGES[:]
-
-    install_origin = config["install-origin"]
-    if install_origin:
-        add_source(install_origin)
-        packages.append(KARAF_PACKAGE)
-        apt_update(fatal=True)
+    if config["install-sources"]:
+        configure_sources(update=True, install_key="install_sources")
 
     # install packages
-    apt_install(packages, fatal=True)
+    apt_install(PACKAGES, fatal=True)
 
-    install_dir_name = "opendaylight-karaf"
-
-    if not install_origin:
+    install_url = config["install-url"]
+    if install_url:
         # install opendaylight from tarball
-        install_url = config["install-url"]
+
         # this extracts the archive too
         install_remote(install_url, dest="/opt")
         # The extracted dirname. Look at what's on disk instead of mangling, so
@@ -77,6 +71,9 @@ def install():
             if f.startswith("distribution-karaf")][0]
         if not os.path.exists("/opt/opendaylight-karaf"):
             os.symlink(install_dir_name, "/opt/opendaylight-karaf")
+    else:
+        apt_install([KARAF_PACKAGE], fatal=True)
+        install_dir_name = "opendaylight-karaf"
 
     shutil.copy("files/odl-controller.conf", "/etc/init")
     adduser("opendaylight", system_user=True)
