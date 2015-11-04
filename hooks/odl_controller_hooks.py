@@ -21,12 +21,14 @@ from charmhelpers.core.host import (
     service_start
 )
 
-from charmhelpers.fetch import apt_install, install_remote
+from charmhelpers.fetch import (
+    configure_sources, apt_install, install_remote)
 
 from odl_controller_utils import write_mvn_config, process_odl_cmds
 from odl_controller_utils import PROFILES
 
 PACKAGES = ["default-jre-headless", "python-jinja2"]
+KARAF_PACKAGE = "opendaylight-karaf"
 
 hooks = Hooks()
 config = config()
@@ -50,26 +52,37 @@ def controller_api_joined(r_id=None):
 
 @hooks.hook()
 def install():
-    # install dependencies
+    if config.get("install-sources"):
+        configure_sources(update=True, sources_var="install-sources",
+                          keys_var="install-keys")
+
+    # install packages
     apt_install(PACKAGES, fatal=True)
 
-    # install opendaylight
     install_url = config["install-url"]
-    install_remote(install_url, dest="/opt")  # this extracts the archive too
+    if install_url:
+        # install opendaylight from tarball
 
-    # The extracted dirname. Look at what's on disk instead of mangling, so
-    # the distribution tar.gz's name doesn't matter.
-    name = [f for f in os.listdir("/opt")
+        # this extracts the archive too
+        install_remote(install_url, dest="/opt")
+        # The extracted dirname. Look at what's on disk instead of mangling, so
+        # the distribution tar.gz's name doesn't matter.
+        install_dir_name = [
+            f for f in os.listdir("/opt")
             if f.startswith("distribution-karaf")][0]
-
-    if not os.path.exists("/opt/opendaylight-karaf"):
-        os.symlink(name, "/opt/opendaylight-karaf")
+        if not os.path.exists("/opt/opendaylight-karaf"):
+            os.symlink(install_dir_name, "/opt/opendaylight-karaf")
+    else:
+        apt_install([KARAF_PACKAGE], fatal=True)
+        install_dir_name = "opendaylight-karaf"
 
     shutil.copy("files/odl-controller.conf", "/etc/init")
     adduser("opendaylight", system_user=True)
     mkdir("/home/opendaylight", owner="opendaylight", group="opendaylight",
           perms=0755)
-    check_call(["chown", "-R", "opendaylight:opendaylight", "/opt/" + name])
+    check_call(
+        ["chown", "-R", "opendaylight:opendaylight",
+         os.path.join("/opt", install_dir_name)])
     mkdir("/var/log/opendaylight", owner="opendaylight", group="opendaylight",
           perms=0755)
 
