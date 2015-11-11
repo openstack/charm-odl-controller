@@ -1,0 +1,9 @@
+#!/usr/bin/python
+
+"""Amulet tests on a basic odl controller deployment on trusty-icehouse."""
+
+from basic_deployment import ODLControllerBasicDeployment
+
+if __name__ == '__main__':
+    deployment = ODLControllerBasicDeployment(series='trusty')
+    deployment.run_tests()

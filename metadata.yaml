@@ -6,7 +6,7 @@ description: |
   virtual-network to virtual-machines, containers or network namespaces.
   .
   This charm provides the controller component.
-categories:
+tags:
   - openstack
 provides:
   controller-api:
