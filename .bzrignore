@@ -1,1 +1,4 @@
 bin
+.testrepository
+.coverage
+.tox

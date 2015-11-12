@@ -19,17 +19,19 @@ options:
       package.
   install-sources:
     type: string
+    default: ''
     description: |
       Package sources to install. Can be used to specify where to install the
       opendaylight-karaf package from.
   install-keys:
     type: string
+    default: ''
     description: Apt keys for package install sources
   http-proxy:
     type: string
-    default:
+    default: ''
     description: Proxy to use for http connections for OpenDayLight
   https-proxy:
     type: string
-    default:
+    default: ''
     description: Proxy to use for https connections for OpenDayLight

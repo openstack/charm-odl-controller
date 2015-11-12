@@ -6,3 +6,5 @@ include:
   - payload
   - contrib.openstack|inc=*
   - contrib.storage
+  - contrib.network.ip
+  - contrib.python.packages
