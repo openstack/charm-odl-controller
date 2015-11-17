@@ -55,7 +55,7 @@ class ODLControllerUtilsTests(CharmTestCase):
         utils.run_odl(["feature:list"])
         self.subprocess.check_output.assert_called_with(
             ["/opt/opendaylight-karaf/bin/client", "-r", '20', "-h",
-             'localhost', "-a", '8101', 'feature:list']
+             'localhost', "-a", '8101', "-u", "karaf", 'feature:list']
         )
 
     def test_installed_features(self):
