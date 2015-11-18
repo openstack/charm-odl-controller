@@ -76,9 +76,9 @@ def write_mvn_config():
 
 
 @retry_on_exception(5, base_delay=10, exc_type=subprocess.CalledProcessError)
-def run_odl(cmds, host="localhost", port=8101, retries=20):
+def run_odl(cmds, host="localhost", port=8101, retries=20, user="karaf"):
     run_cmd = ["/opt/opendaylight-karaf/bin/client", "-r", str(retries),
-               "-h", host, "-a", str(port)]
+               "-h", host, "-a", str(port), "-u", str(user)]
     run_cmd.extend(cmds)
     output = subprocess.check_output(run_cmd)
     return output
