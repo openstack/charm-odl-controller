@@ -26,7 +26,7 @@ The neutron-gateway charm must also be deployed with 'ovs-odl' as the plugin con
     neutron-gateway:
         plugin: ovs-odl
     EOF
-    juju deploy --config neutron-gateway
+    juju deploy --config config.yaml neutron-gateway
 
 And then add relations between services to complete the deployment:
 
