@@ -26,6 +26,10 @@ PROFILES = {
                             "odl-ovsdb-northbound",
                             "odl-dlux-core"],
         "port": 8080
+    },
+    "openvswitch-odl-lithium": {
+        "feature:install": ["odl-ovsdb-openstack"],
+        "port": 8080
     }
 }
 PROFILES["default"] = PROFILES["openvswitch-odl"]
