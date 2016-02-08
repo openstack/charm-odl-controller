@@ -27,8 +27,41 @@ PROFILES = {
                             "odl-dlux-core"],
         "port": 8080
     },
-    "openvswitch-odl-lithium": {
+    "openvswitch-odl-li": {
         "feature:install": ["odl-ovsdb-openstack"],
+        "port": 8080
+    },
+    "openvswitch-odl-Be": {
+        "feature:install": ["odl-ovsdb-openstack",
+                            "odl-ovsdb-plugin",
+                            "odl-restconf", 
+                            "odl-aaa-authn",
+                            "odl-dlux-all"],
+        "port": 8080
+    },
+    "openvswitch-odl-Be-l3": {
+        "feature:install": ["odl-ovsdb-openstack",
+                            "odl-ovsdb-plugin"],
+        "port": 8080
+    },
+    "openvswitch-odl-Be-sfc": {
+        "feature:install": ["odl-ovsdb-openstack",
+                            "odl-sfc-core",
+                            "odl-sfc-sb-rest",
+                            "odl-sfc-ui",
+                            "odl-sfc-netconf",
+                            "odl-sfc-ovs",
+                            "odl-sfcofl2",
+                            "odl-sfc-test-consumer"],
+        "port": 8080
+    },
+    "openvswitch-odl-Be-vpn": {
+        "feature:install": ["odl-ovsdb-openstack",
+                            "odl-vpnservice-api",
+                            "odl-vpnservice-impl",
+                            "odl-vpnservice-impl-rest",
+                            "odl-vpnservice-impl-ui",
+                            "odl-vpnservice-core"],
         "port": 8080
     }
 }
