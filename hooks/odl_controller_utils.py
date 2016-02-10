@@ -33,7 +33,7 @@ PROFILES = {
     },
     "openvswitch-odl-Be": {
         "feature:install": ["odl-ovsdb-openstack",
-                            "odl-restconf", 
+                            "odl-restconf",
                             "odl-aaa-authn",
                             "odl-dlux-all"],
         "port": 8080
