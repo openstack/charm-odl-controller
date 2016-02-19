@@ -196,9 +196,7 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
                             'neutron-metering-agent',
                             'neutron-l3-agent']
 
-        nova_cc_services = ['nova-api-ec2',
-                            'nova-api-os-compute',
-                            'nova-objectstore',
+        nova_cc_services = ['nova-api-os-compute',
                             'nova-cert',
                             'nova-scheduler',
                             'nova-conductor']
