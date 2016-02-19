@@ -6,7 +6,9 @@ options:
       SDN controller profile to configure OpenDayLight for; supported values include
       
         cisco-vpp: Cisco VPP for OpenStack
-        openvswitch-odl: Open vSwitch OpenDayLight for OpenStack
+        openvswitch-odl: Open vSwitch OpenDayLight for OpenStack - Helium release
+        openvswitch-odl-lithium: Open vSwitch OpenDayLight for OpenStack - Lithium release
+        openvswitch-odl-beryllium: Open vSwitch OpenDayLight for OpenStack - Beryllium release
       
       Only a single profile is supported at any one time.
   install-url:

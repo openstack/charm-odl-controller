@@ -52,16 +52,8 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
             {'name': 'keystone'},
             {'name': 'nova-cloud-controller'},
             {'name': 'neutron-gateway'},
-            {
-                'name': 'neutron-api-odl',
-                'location': 'lp:~openstack-charmers/charms/trusty/'
-                            'neutron-api-odl/vpp',
-            },
-            {
-                'name': 'openvswitch-odl',
-                'location': 'lp:~openstack-charmers/charms/trusty/'
-                            'openvswitch-odl/trunk',
-            },
+            {'name': 'neutron-api-odl'},
+            {'name': 'openvswitch-odl'},
             {'name': 'neutron-api'},
             {'name': 'nova-compute'},
             {'name': 'glance'},
@@ -122,7 +114,7 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
                 os.environ['AMULET_HTTP_PROXY']
         keystone_config = {'admin-password': 'openstack',
                            'admin-token': 'ubuntutesting'}
-        nova_cc_config = {'network-manager': 'Quantum',
+        nova_cc_config = {'network-manager': 'Neutron',
                           'quantum-security-groups': 'yes'}
         configs = {'neutron-gateway': neutron_gateway_config,
                    'neutron-api': neutron_api_config,
@@ -196,9 +188,7 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
                             'neutron-metering-agent',
                             'neutron-l3-agent']
 
-        nova_cc_services = ['nova-api-ec2',
-                            'nova-api-os-compute',
-                            'nova-objectstore',
+        nova_cc_services = ['nova-api-os-compute',
                             'nova-cert',
                             'nova-scheduler',
                             'nova-conductor']
@@ -267,7 +257,7 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
              'tenantId': u.not_null,
              'id': u.not_null,
              'email': 'juju@localhost'},
-            {'name': 'quantum',
+            {'name': 'neutron',
              'enabled': True,
              'tenantId': u.not_null,
              'id': u.not_null,
