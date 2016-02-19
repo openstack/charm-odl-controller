@@ -52,16 +52,8 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
             {'name': 'keystone'},
             {'name': 'nova-cloud-controller'},
             {'name': 'neutron-gateway'},
-            {
-                'name': 'neutron-api-odl',
-                'location': 'lp:~openstack-charmers/charms/trusty/'
-                            'neutron-api-odl/vpp',
-            },
-            {
-                'name': 'openvswitch-odl',
-                'location': 'lp:~openstack-charmers/charms/trusty/'
-                            'openvswitch-odl/trunk',
-            },
+            {'name': 'neutron-api-odl'},
+            {'name': 'openvswitch-odl'},
             {'name': 'neutron-api'},
             {'name': 'nova-compute'},
             {'name': 'glance'},
