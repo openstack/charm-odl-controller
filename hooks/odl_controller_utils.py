@@ -30,7 +30,38 @@ PROFILES = {
     "openvswitch-odl-lithium": {
         "feature:install": ["odl-ovsdb-openstack"],
         "port": 8080
-    }
+    },
+    "openvswitch-odl-beryllium": {
+        "feature:install": ["odl-ovsdb-openstack",
+                            "odl-restconf",
+                            "odl-aaa-authn",
+                            "odl-dlux-all"],
+        "port": 8080
+    },
+    "openvswitch-odl-beryllium-l3": {
+        "feature:install": ["odl-ovsdb-openstack"],
+        "port": 8080
+    },
+    "openvswitch-odl-beryllium-sfc": {
+        "feature:install": ["odl-ovsdb-openstack",
+                            "odl-sfc-core",
+                            "odl-sfc-sb-rest",
+                            "odl-sfc-ui",
+                            "odl-sfc-netconf",
+                            "odl-sfc-ovs",
+                            "odl-sfcofl2",
+                            "odl-sfc-test-consumer"],
+        "port": 8080
+    },
+    "openvswitch-odl-beryllium-vpn": {
+        "feature:install": ["odl-ovsdb-openstack",
+                            "odl-vpnservice-api",
+                            "odl-vpnservice-impl",
+                            "odl-vpnservice-impl-rest",
+                            "odl-vpnservice-impl-ui",
+                            "odl-vpnservice-core"],
+        "port": 8080
+    },
 }
 PROFILES["default"] = PROFILES["openvswitch-odl"]
 

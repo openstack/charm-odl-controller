@@ -122,7 +122,7 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
                 os.environ['AMULET_HTTP_PROXY']
         keystone_config = {'admin-password': 'openstack',
                            'admin-token': 'ubuntutesting'}
-        nova_cc_config = {'network-manager': 'Quantum',
+        nova_cc_config = {'network-manager': 'Neutron',
                           'quantum-security-groups': 'yes'}
         configs = {'neutron-gateway': neutron_gateway_config,
                    'neutron-api': neutron_api_config,
@@ -267,7 +267,7 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
              'tenantId': u.not_null,
              'id': u.not_null,
              'email': 'juju@localhost'},
-            {'name': 'quantum',
+            {'name': 'neutron',
              'enabled': True,
              'tenantId': u.not_null,
              'id': u.not_null,
