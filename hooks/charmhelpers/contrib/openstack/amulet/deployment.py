@@ -121,10 +121,12 @@ class OpenStackAmuletDeployment(AmuletDeployment):
 
         # Charms which should use the source config option
         use_source = ['mysql', 'mongodb', 'rabbitmq-server', 'ceph',
-                      'ceph-osd', 'ceph-radosgw']
+                      'ceph-osd', 'ceph-radosgw', 'ceph-mon']
 
         # Charms which can not use openstack-origin, ie. many subordinates
-        no_origin = ['cinder-ceph', 'hacluster', 'neutron-openvswitch', 'nrpe']
+        no_origin = ['cinder-ceph', 'hacluster', 'neutron-openvswitch', 'nrpe',
+                     'openvswitch-odl', 'neutron-api-odl', 'odl-controller',
+                     'cinder-backup']
 
         if self.openstack:
             for svc in services:
@@ -224,7 +226,8 @@ class OpenStackAmuletDeployment(AmuletDeployment):
          self.precise_havana, self.precise_icehouse,
          self.trusty_icehouse, self.trusty_juno, self.utopic_juno,
          self.trusty_kilo, self.vivid_kilo, self.trusty_liberty,
-         self.wily_liberty) = range(12)
+         self.wily_liberty, self.trusty_mitaka,
+         self.xenial_mitaka) = range(14)
 
         releases = {
             ('precise', None): self.precise_essex,
@@ -236,9 +239,11 @@ class OpenStackAmuletDeployment(AmuletDeployment):
             ('trusty', 'cloud:trusty-juno'): self.trusty_juno,
             ('trusty', 'cloud:trusty-kilo'): self.trusty_kilo,
             ('trusty', 'cloud:trusty-liberty'): self.trusty_liberty,
+            ('trusty', 'cloud:trusty-mitaka'): self.trusty_mitaka,
             ('utopic', None): self.utopic_juno,
             ('vivid', None): self.vivid_kilo,
-            ('wily', None): self.wily_liberty}
+            ('wily', None): self.wily_liberty,
+            ('xenial', None): self.xenial_mitaka}
         return releases[(self.series, self.openstack)]
 
     def _get_openstack_release_string(self):
@@ -255,6 +260,7 @@ class OpenStackAmuletDeployment(AmuletDeployment):
             ('utopic', 'juno'),
             ('vivid', 'kilo'),
             ('wily', 'liberty'),
+            ('xenial', 'mitaka'),
         ])
         if self.openstack:
             os_origin = self.openstack.split(':')[1]
