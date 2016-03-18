@@ -18,7 +18,9 @@ from charmhelpers.core.host import (
     adduser,
     mkdir,
     restart_on_change,
-    service_start
+    service_start,
+    init_is_systemd,
+    service,
 )
 
 from charmhelpers.fetch import (
@@ -50,7 +52,7 @@ def controller_api_joined(r_id=None):
                  username="admin", password="admin")
 
 
-@hooks.hook()
+@hooks.hook('install.real')
 def install():
     if config.get("install-sources"):
         configure_sources(update=True, sources_var="install-sources",
@@ -76,7 +78,12 @@ def install():
         apt_install([KARAF_PACKAGE], fatal=True)
         install_dir_name = "opendaylight-karaf"
 
-    shutil.copy("files/odl-controller.conf", "/etc/init")
+    if init_is_systemd():
+        shutil.copy("files/odl-controller.service", "/lib/systemd/system")
+        service('enable', 'odl-controller')
+    else:
+        shutil.copy("files/odl-controller.conf", "/etc/init")
+
     adduser("opendaylight", system_user=True)
     mkdir("/home/opendaylight", owner="opendaylight", group="opendaylight",
           perms=0755)

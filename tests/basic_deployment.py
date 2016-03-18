@@ -66,7 +66,6 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
         """Add all of the relations for the services."""
         relations = {
             'keystone:shared-db': 'mysql:shared-db',
-            'neutron-gateway:shared-db': 'mysql:shared-db',
             'neutron-gateway:amqp': 'rabbitmq-server:amqp',
             'nova-cloud-controller:quantum-network-service':
             'neutron-gateway:quantum-network-service',

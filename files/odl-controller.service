@@ -1,0 +1,12 @@
+[Unit]
+Description=OpenDayLight SDN Controller
+After=network.target
+
+[Service]
+Type=forking
+User=opendaylight
+Group=opendaylight
+ExecStart=/opt/opendaylight-karaf/bin/start
+
+[Install]
+WantedBy=multi-user.target

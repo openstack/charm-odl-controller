@@ -57,6 +57,7 @@ from charmhelpers.core.host import (
     get_nic_hwaddr,
     mkdir,
     write_file,
+    pwgen,
 )
 from charmhelpers.contrib.hahelpers.cluster import (
     determine_apache_port,
@@ -87,6 +88,14 @@ from charmhelpers.contrib.network.ip import (
     is_bridge_member,
 )
 from charmhelpers.contrib.openstack.utils import get_host_ip
+from charmhelpers.core.unitdata import kv
+
+try:
+    import psutil
+except ImportError:
+    apt_install('python-psutil', fatal=True)
+    import psutil
+
 CA_CERT_PATH = '/usr/local/share/ca-certificates/keystone_juju_ca_cert.crt'
 ADDRESS_TYPES = ['admin', 'internal', 'public']
 
@@ -401,6 +410,7 @@ class IdentityServiceContext(OSContextGenerator):
                 auth_host = format_ipv6_addr(auth_host) or auth_host
                 svc_protocol = rdata.get('service_protocol') or 'http'
                 auth_protocol = rdata.get('auth_protocol') or 'http'
+                api_version = rdata.get('api_version') or '2.0'
                 ctxt.update({'service_port': rdata.get('service_port'),
                              'service_host': serv_host,
                              'auth_host': auth_host,
@@ -409,7 +419,8 @@ class IdentityServiceContext(OSContextGenerator):
                              'admin_user': rdata.get('service_username'),
                              'admin_password': rdata.get('service_password'),
                              'service_protocol': svc_protocol,
-                             'auth_protocol': auth_protocol})
+                             'auth_protocol': auth_protocol,
+                             'api_version': api_version})
 
                 if self.context_complete(ctxt):
                     # NOTE(jamespage) this is required for >= icehouse
@@ -626,15 +637,28 @@ class HAProxyContext(OSContextGenerator):
         if config('haproxy-client-timeout'):
             ctxt['haproxy_client_timeout'] = config('haproxy-client-timeout')
 
+        if config('haproxy-queue-timeout'):
+            ctxt['haproxy_queue_timeout'] = config('haproxy-queue-timeout')
+
+        if config('haproxy-connect-timeout'):
+            ctxt['haproxy_connect_timeout'] = config('haproxy-connect-timeout')
+
         if config('prefer-ipv6'):
             ctxt['ipv6'] = True
             ctxt['local_host'] = 'ip6-localhost'
             ctxt['haproxy_host'] = '::'
-            ctxt['stat_port'] = ':::8888'
         else:
             ctxt['local_host'] = '127.0.0.1'
             ctxt['haproxy_host'] = '0.0.0.0'
-            ctxt['stat_port'] = ':8888'
+
+        ctxt['stat_port'] = '8888'
+
+        db = kv()
+        ctxt['stat_password'] = db.get('stat-password')
+        if not ctxt['stat_password']:
+            ctxt['stat_password'] = db.set('stat-password',
+                                           pwgen(32))
+            db.flush()
 
         for frontend in cluster_hosts:
             if (len(cluster_hosts[frontend]['backends']) > 1 or
@@ -1088,6 +1112,20 @@ class OSConfigFlagContext(OSContextGenerator):
                 config_flags_parser(config_flags)}
 
 
+class LibvirtConfigFlagsContext(OSContextGenerator):
+    """
+    This context provides support for extending
+    the libvirt section through user-defined flags.
+    """
+    def __call__(self):
+        ctxt = {}
+        libvirt_flags = config('libvirt-flags')
+        if libvirt_flags:
+            ctxt['libvirt_flags'] = config_flags_parser(
+                libvirt_flags)
+        return ctxt
+
+
 class SubordinateConfigContext(OSContextGenerator):
 
     """
@@ -1228,13 +1266,11 @@ class WorkerConfigContext(OSContextGenerator):
 
     @property
     def num_cpus(self):
-        try:
-            from psutil import NUM_CPUS
-        except ImportError:
-            apt_install('python-psutil', fatal=True)
-            from psutil import NUM_CPUS
-
-        return NUM_CPUS
+        # NOTE: use cpu_count if present (16.04 support)
+        if hasattr(psutil, 'cpu_count'):
+            return psutil.cpu_count()
+        else:
+            return psutil.NUM_CPUS
 
     def __call__(self):
         multiplier = config('worker-multiplier') or 0
@@ -1437,6 +1473,8 @@ class NetworkServiceContext(OSContextGenerator):
                     rdata.get('service_protocol') or 'http',
                     'auth_protocol':
                     rdata.get('auth_protocol') or 'http',
+                    'api_version':
+                    rdata.get('api_version') or '2.0',
                 }
                 if self.context_complete(ctxt):
                     return ctxt

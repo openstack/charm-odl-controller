@@ -21,6 +21,8 @@ TO_PATCH = [
     'service_start',
     'shutil',
     'write_mvn_config',
+    'init_is_systemd',
+    'service',
 ]
 
 
@@ -34,6 +36,7 @@ class ODLControllerHooksTests(CharmTestCase):
         self.install_url = 'http://10.10.10.10/distribution-karaf.tgz'
         self.test_config.set('install-url', self.install_url)
         self.test_config.set('profile', 'default')
+        self.init_is_systemd.return_value = False
 
     def _call_hook(self, hookname):
         hooks.hooks.execute([
@@ -67,6 +70,38 @@ class ODLControllerHooksTests(CharmTestCase):
         self.service_start.assert_called_with('odl-controller')
         self.shutil.copy.assert_called_with('files/odl-controller.conf',
                                             '/etc/init')
+
+    @patch('os.symlink')
+    @patch('os.path.exists')
+    @patch('os.listdir')
+    def test_install_hook_systemd(self, mock_listdir,
+                                  mock_path_exists, mock_symlink):
+        self.init_is_systemd.return_value = True
+        mock_listdir.return_value = ['random-file', 'distribution-karaf.tgz']
+        mock_path_exists.return_value = False
+        self._call_hook('install')
+        self.apt_install.assert_called_with([
+            "default-jre-headless", "python-jinja2"],
+            fatal=True
+        )
+        mock_symlink.assert_called_with('distribution-karaf.tgz',
+                                        '/opt/opendaylight-karaf')
+        self.adduser.assert_called_with("opendaylight", system_user=True)
+        self.mkdir.assert_has_calls([
+            call('/home/opendaylight', owner="opendaylight",
+                 group="opendaylight", perms=0755),
+            call('/var/log/opendaylight', owner="opendaylight",
+                 group="opendaylight", perms=0755)
+        ])
+        self.check_call.assert_called_with([
+            "chown", "-R", "opendaylight:opendaylight",
+            "/opt/distribution-karaf.tgz"
+        ])
+        self.write_mvn_config.assert_called_with()
+        self.service_start.assert_called_with('odl-controller')
+        self.shutil.copy.assert_called_with('files/odl-controller.service',
+                                            '/lib/systemd/system')
+        self.service.assert_called_with('enable', 'odl-controller')
 
     def test_ovsdb_manager_joined_hook(self):
         self._call_hook('ovsdb-manager-relation-joined')
