@@ -11,7 +11,7 @@ test:
 functional_test:
 	@echo Starting amulet tests...
 	@tests/setup/00-setup
-	@juju test -v -p AMULET_ODL_LOCATION,AMULET_HTTP_PROXY,AMULET_OS_VIP \
+	@juju test -v -p AMULET_ODL_LOCATION,AMULET_ODL_HE_LOCATION,AMULET_ODL_LI_LOCATION,AMULET_ODL_BE_LOCATION,AMULET_HTTP_PROXY,AMULET_OS_VIP \
 		--timeout 2700
 
 bin/charm_helpers_sync.py:

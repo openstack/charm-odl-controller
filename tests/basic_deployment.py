@@ -18,15 +18,27 @@ from charmhelpers.contrib.openstack.amulet.utils import (
 # Use DEBUG to turn on debug logging
 u = OpenStackAmuletUtils(DEBUG)
 
+ODL_PROFILES = {
+    'helium': {
+        'location': 'AMULET_ODL_LOCATION',
+        'profile': 'openvswitch-odl'
+    },
+    'beryllium': {
+        'location': 'AMULET_ODL_BE_LOCATION',
+        'profile': 'openvswitch-odl-beryllium'
+    },
+}
+
 
 class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
     """Amulet tests on a basic OVS ODL deployment."""
 
     def __init__(self, series, openstack=None, source=None, git=False,
-                 stable=False):
+                 stable=False, odl_version='helium'):
         """Deploy the entire test environment."""
         super(ODLControllerBasicDeployment, self).__init__(series, openstack,
                                                            source, stable)
+        self.odl_version = odl_version
         self._add_services()
         self._add_relations()
         self._configure_services()
@@ -98,23 +110,24 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
         """Configure all of the services."""
         neutron_gateway_config = {'plugin': 'ovs-odl',
                                   'instance-mtu': '1400'}
-        neutron_api_config = {'neutron-security-groups': 'False',
+        neutron_api_config = {'neutron-security-groups': 'True',
                               'manage-neutron-plugin-legacy-mode': 'False'}
         neutron_api_odl_config = {'overlay-network-type': 'vxlan gre'}
         odl_controller_config = {}
-        if os.environ.get('AMULET_ODL_LOCATION'):
+        if os.environ.get(ODL_PROFILES[self.odl_version]['location']):
             odl_controller_config['install-url'] = \
-                os.environ['AMULET_ODL_LOCATION']
+                os.environ.get(ODL_PROFILES[self.odl_version]['location'])
         if os.environ.get('AMULET_HTTP_PROXY'):
             odl_controller_config['http-proxy'] = \
                 os.environ['AMULET_HTTP_PROXY']
         if os.environ.get('AMULET_HTTP_PROXY'):
             odl_controller_config['https-proxy'] = \
                 os.environ['AMULET_HTTP_PROXY']
+        odl_controller_config['profile'] = \
+            ODL_PROFILES[self.odl_version]['profile']
         keystone_config = {'admin-password': 'openstack',
                            'admin-token': 'ubuntutesting'}
-        nova_cc_config = {'network-manager': 'Neutron',
-                          'quantum-security-groups': 'yes'}
+        nova_cc_config = {'network-manager': 'Neutron'}
         configs = {'neutron-gateway': neutron_gateway_config,
                    'neutron-api': neutron_api_config,
                    'neutron-api-odl': neutron_api_odl_config,
@@ -187,17 +200,9 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
                             'neutron-metering-agent',
                             'neutron-l3-agent']
 
-        nova_cc_services = ['nova-api-os-compute',
-                            'nova-cert',
-                            'nova-scheduler',
-                            'nova-conductor']
-
         odl_c_services = ['odl-controller']
 
         commands = {
-            self.mysql_sentry: ['mysql'],
-            self.keystone_sentry: ['keystone'],
-            self.nova_cc_sentry: nova_cc_services,
             self.neutron_gateway_sentry: neutron_services,
             self.odl_controller_sentry: odl_c_services,
         }
@@ -389,26 +394,34 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
             'ovsdb-manager',
             'openvswitch-odl:ovsdb-manager'
         )['private-address']
-        controller_url = "tcp:{}:6633".format(odl_ip)
+        # NOTE: 6633 is legacy 6653 is IANA assigned
+        if self.odl_version == 'helium':
+            controller_url = "tcp:{}:6633".format(odl_ip)
+            check_bridges = ['br-int', 'br-ex', 'br-data']
+        else:
+            controller_url = "tcp:{}:6653".format(odl_ip)
+            # NOTE: later ODL releases only manage br-int
+            check_bridges = ['br-int']
         cmd = 'ovs-vsctl list-br'
         output, _ = self.neutron_gateway_sentry.run(cmd)
         bridges = output.split()
         u.log.debug('Checking bridge configuration...')
-        for bridge in ['br-int', 'br-ex', 'br-data']:
+        for bridge in check_bridges:
             if bridge not in bridges:
                 amulet.raise_status(
                     amulet.FAIL,
                     msg="Missing bridge {} from gateway unit".format(bridge)
                 )
+            u.log.debug('Validating ...')
             cmd = 'ovs-vsctl get-controller {}'.format(bridge)
             br_controllers, _ = self.neutron_gateway_sentry.run(cmd)
-            br_controllers = list(set(br_controllers.split('\n')))
+            br_controllers = list(set(br_controllers.strip().split('\n')))
             if len(br_controllers) != 1 or br_controllers[0] != controller_url:
                 status, _ = self.neutron_gateway_sentry.run('ovs-vsctl show')
                 amulet.raise_status(
                     amulet.FAIL,
                     msg="Controller configuration on bridge"
-                        " {} incorrect: !{}! != !{}!\n"
+                        " {} incorrect: !{}! not in !{}!\n"
                         "{}".format(bridge,
                                     br_controllers,
                                     controller_url,
