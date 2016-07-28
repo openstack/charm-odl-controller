@@ -48,7 +48,7 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
     """Amulet tests on a basic OVS ODL deployment."""
 
     def __init__(self, series, openstack=None, source=None, git=False,
-                 stable=False, odl_version='helium'):
+                 stable=True, odl_version='helium'):
         """Deploy the entire test environment."""
         super(ODLControllerBasicDeployment, self).__init__(series, openstack,
                                                            source, stable)
