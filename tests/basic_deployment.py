@@ -41,6 +41,10 @@ ODL_PROFILES = {
         'location': 'AMULET_ODL_BE_LOCATION',
         'profile': 'openvswitch-odl-beryllium'
     },
+    'boron': {
+        'location': 'AMULET_ODL_BO_LOCATION',
+        'profile': 'openvswitch-odl-boron'
+    },
 }
 
 
