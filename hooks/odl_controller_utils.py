@@ -76,6 +76,16 @@ PROFILES = {
                             "odl-vpnservice-core"],
         "port": 8080
     },
+    "openvswitch-odl-boron": {
+        "feature:install": ["odl-netvirt-openstack",
+                            "odl-dlux-all"],
+        "port": 8080
+    },
+    "openvswitch-odl-boron-sfc": {
+        "feature:install": ["odl-ovsdb-sfc-rest",
+                            "odl-dlux-all"],
+        "port": 8080
+    },
 }
 PROFILES["default"] = PROFILES["openvswitch-odl"]
 

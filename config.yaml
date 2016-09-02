@@ -9,6 +9,7 @@ options:
         openvswitch-odl: Open vSwitch OpenDayLight for OpenStack - Helium release
         openvswitch-odl-lithium: Open vSwitch OpenDayLight for OpenStack - Lithium release
         openvswitch-odl-beryllium: Open vSwitch OpenDayLight for OpenStack - Beryllium release
+        openvswitch-odl-boron: Open vSwitch OpenDayLight for OpenStack - Boron release
       
       Only a single profile is supported at any one time.
   install-url:
