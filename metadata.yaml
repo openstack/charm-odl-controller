@@ -8,6 +8,10 @@ description: |
   This charm provides the controller component.
 tags:
   - openstack
+series:
+  - xenial
+  - trusty
+  - yakkety
 provides:
   controller-api:
     interface: odl-controller-api
