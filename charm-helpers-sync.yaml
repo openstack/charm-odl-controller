@@ -4,6 +4,7 @@ include:
   - core
   - fetch
   - payload
+  - osplatform
   - contrib.openstack|inc=*
   - contrib.storage
   - contrib.network.ip
