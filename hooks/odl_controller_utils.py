@@ -17,8 +17,9 @@ from os import environ
 import urlparse
 
 from charmhelpers.core.templating import render
-from charmhelpers.core.hookenv import config
+from charmhelpers.core.hookenv import config, status_set
 from charmhelpers.core.decorators import retry_on_exception
+from charmhelpers.core.host import service_running
 
 
 PROFILES = {
@@ -170,3 +171,11 @@ def process_odl_cmds(odl_cmds):
         for log_level in logging.keys():
             for target in logging[log_level]:
                 run_odl(["log:set", log_level, target])
+
+
+def assess_status():
+    '''Assess unit status and inform juju using status-set'''
+    if service_running('odl-controller'):
+        status_set('active', 'Unit is ready')
+    else:
+        status_set('blocked', 'ODL controller not running')

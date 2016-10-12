@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mock import patch, call
+from mock import patch, call, ANY
 from test_utils import CharmTestCase
 
 import odl_controller_utils as utils
@@ -105,3 +105,16 @@ class ODLControllerUtilsTests(CharmTestCase):
             call(["feature:install", "odl-l2switch-all"]),
             call(['log:set', 'TRACE', 'cosc-cvpn-ovs-rest'])
         ])
+
+    @patch.object(utils, 'service_running')
+    @patch.object(utils, 'status_set')
+    def test_assess_status(self, status_set, service_running):
+        service_running.return_value = False
+        utils.assess_status()
+        service_running.assert_called_with('odl-controller')
+        status_set.assert_called_with('blocked', ANY)
+
+        service_running.return_value = True
+        utils.assess_status()
+        service_running.assert_called_with('odl-controller')
+        status_set.assert_called_with('active', ANY)

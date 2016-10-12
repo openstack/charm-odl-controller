@@ -41,7 +41,7 @@ from charmhelpers.fetch import (
     configure_sources, apt_install, install_remote)
 
 from odl_controller_utils import write_mvn_config, process_odl_cmds
-from odl_controller_utils import PROFILES
+from odl_controller_utils import PROFILES, assess_status
 
 PACKAGES = ["default-jre-headless", "python-jinja2"]
 KARAF_PACKAGE = "opendaylight-karaf"
@@ -117,6 +117,7 @@ def main():
         hooks.execute(sys.argv)
     except UnregisteredHookError as e:
         log("Unknown hook {} - skipping.".format(e))
+    assess_status()
 
 
 @hooks.hook("ovsdb-manager-relation-joined")
