@@ -14,11 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Amulet tests on a basic odl controller deployment on yakkety-newton."""
+"""Amulet tests on a basic odl controller deployment on zesty-ocata."""
 
 from basic_deployment import ODLControllerBasicDeployment
 
 if __name__ == '__main__':
-    deployment = ODLControllerBasicDeployment(series='yakkety',
+    deployment = ODLControllerBasicDeployment(series='zesty',
                                               odl_version='beryllium')
     deployment.run_tests()

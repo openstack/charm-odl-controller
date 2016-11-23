@@ -498,12 +498,6 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
 
     def test_400_image_instance_create(self):
         """Create an image/instance, verify they exist, and delete them."""
-        # NOTE(coreycb): Skipping failing test on essex until resolved. essex
-        #                nova API calls are getting "Malformed request url
-        #                (HTTP 400)".
-        if self._get_openstack_release() == self.precise_essex:
-            u.log.error("Skipping test (due to Essex)")
-            return
 
         u.log.debug('Checking nova instance creation...')
 
