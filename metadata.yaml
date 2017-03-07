@@ -10,6 +10,7 @@ tags:
   - openstack
 series:
   - xenial
+  - zesty
   - trusty
   - yakkety
 provides:

@@ -336,7 +336,16 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
              'email': 'juju@localhost'}
         ]
 
-        if self._get_openstack_release() >= self.trusty_kilo:
+        if self._get_openstack_release() >= self.xenial_ocata:
+            # Ocata or later
+            expected.append({
+                'name': 'placement_nova',
+                'enabled': True,
+                'tenantId': u.not_null,
+                'id': u.not_null,
+                'email': 'juju@localhost'
+            })
+        elif self._get_openstack_release() >= self.trusty_kilo:
             # Kilo or later
             expected.append({
                 'name': 'nova',
