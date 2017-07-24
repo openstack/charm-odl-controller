@@ -211,7 +211,7 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
                                                       tenant='admin')
         # Authenticate admin with neutron
         ep = self.keystone.service_catalog.url_for(service_type='identity',
-                                                   endpoint_type='publicURL')
+                                                   interface='publicURL')
         self.neutron = neutronclient.Client(auth_url=ep,
                                             username='admin',
                                             password='openstack',
