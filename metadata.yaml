@@ -12,7 +12,6 @@ series:
   - xenial
   - zesty
   - trusty
-  - yakkety
 provides:
   controller-api:
     interface: odl-controller-api
