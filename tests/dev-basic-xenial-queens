@@ -14,11 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Amulet tests on a basic odl controller deployment on zesty-ocata."""
+"""Amulet tests on a basic odl controller deployment on xenial-queens."""
 
 from basic_deployment import ODLControllerBasicDeployment
 
 if __name__ == '__main__':
-    deployment = ODLControllerBasicDeployment(series='zesty',
-                                              odl_version='beryllium')
+    deployment = ODLControllerBasicDeployment(series='xenial',
+                                           openstack='cloud:xenial-queens',
+                                           source='cloud:xenial-updates/queens',
+                                           odl_version='beryllium')
     deployment.run_tests()
