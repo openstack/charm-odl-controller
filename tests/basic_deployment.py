@@ -357,7 +357,7 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
         else:
             # Juno and earlier
             expected.append({
-                'name': 's3_ec2_nova',
+                'name': 's3_nova_ec2',
                 'enabled': True,
                 'tenantId': u.not_null,
                 'id': u.not_null,
