@@ -44,6 +44,7 @@ ARCH_TO_PROPOSED_POCKET = {
     'x86_64': PROPOSED_POCKET,
     'ppc64le': PROPOSED_PORTS_POCKET,
     'aarch64': PROPOSED_PORTS_POCKET,
+    's390x': PROPOSED_PORTS_POCKET,
 }
 CLOUD_ARCHIVE_URL = "http://ubuntu-cloud.archive.canonical.com/ubuntu"
 CLOUD_ARCHIVE_KEY_ID = '5EDB1B62EC4926EA'
@@ -157,6 +158,14 @@ CLOUD_ARCHIVE_POCKETS = {
     'queens/proposed': 'xenial-proposed/queens',
     'xenial-queens/proposed': 'xenial-proposed/queens',
     'xenial-proposed/queens': 'xenial-proposed/queens',
+    # Rocky
+    'rocky': 'bionic-updates/rocky',
+    'bionic-rocky': 'bionic-updates/rocky',
+    'bionic-rocky/updates': 'bionic-updates/rocky',
+    'bionic-updates/rocky': 'bionic-updates/rocky',
+    'rocky/proposed': 'bionic-proposed/rocky',
+    'bionic-rocky/proposed': 'bionic-proposed/rocky',
+    'bionic-proposed/rocky': 'bionic-proposed/rocky',
 }
 
 
@@ -306,7 +315,7 @@ def import_key(key):
         cmd = ['apt-key', 'adv', '--keyserver',
                'hkp://keyserver.ubuntu.com:80', '--recv-keys', key]
         try:
-            subprocess.check_call(cmd)
+            _run_with_retries(cmd)
         except subprocess.CalledProcessError:
             error = "Error importing PGP key '{}'".format(key)
             log(error)

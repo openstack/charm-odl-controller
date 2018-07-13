@@ -133,6 +133,7 @@ UBUNTU_OPENSTACK_RELEASE = OrderedDict([
     ('zesty', 'ocata'),
     ('artful', 'pike'),
     ('bionic', 'queens'),
+    ('cosmic', 'rocky'),
 ])
 
 
@@ -151,6 +152,7 @@ OPENSTACK_CODENAMES = OrderedDict([
     ('2017.1', 'ocata'),
     ('2017.2', 'pike'),
     ('2018.1', 'queens'),
+    ('2018.2', 'rocky'),
 ])
 
 # The ugly duckling - must list releases oldest to newest
@@ -182,7 +184,9 @@ SWIFT_CODENAMES = OrderedDict([
     ('pike',
         ['2.13.0', '2.15.0']),
     ('queens',
-        ['2.16.0']),
+        ['2.16.0', '2.17.0']),
+    ('rocky',
+        ['2.18.0']),
 ])
 
 # >= Liberty version->codename mapping
@@ -306,7 +310,7 @@ def get_os_codename_install_source(src):
 
     if src.startswith('cloud:'):
         ca_rel = src.split(':')[1]
-        ca_rel = ca_rel.split('%s-' % ubuntu_rel)[1].split('/')[0]
+        ca_rel = ca_rel.split('-')[1].split('/')[0]
         return ca_rel
 
     # Best guess match based on deb string provided

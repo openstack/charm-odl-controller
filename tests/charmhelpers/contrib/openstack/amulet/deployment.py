@@ -21,6 +21,9 @@ from collections import OrderedDict
 from charmhelpers.contrib.amulet.deployment import (
     AmuletDeployment
 )
+from charmhelpers.contrib.openstack.amulet.utils import (
+    OPENSTACK_RELEASES_PAIRS
+)
 
 DEBUG = logging.DEBUG
 ERROR = logging.ERROR
@@ -271,11 +274,8 @@ class OpenStackAmuletDeployment(AmuletDeployment):
            release.
            """
         # Must be ordered by OpenStack release (not by Ubuntu release):
-        (self.trusty_icehouse, self.trusty_kilo, self.trusty_liberty,
-         self.trusty_mitaka, self.xenial_mitaka, self.xenial_newton,
-         self.yakkety_newton, self.xenial_ocata, self.zesty_ocata,
-         self.xenial_pike, self.artful_pike, self.xenial_queens,
-         self.bionic_queens,) = range(13)
+        for i, os_pair in enumerate(OPENSTACK_RELEASES_PAIRS):
+            setattr(self, os_pair, i)
 
         releases = {
             ('trusty', None): self.trusty_icehouse,
@@ -291,6 +291,8 @@ class OpenStackAmuletDeployment(AmuletDeployment):
             ('zesty', None): self.zesty_ocata,
             ('artful', None): self.artful_pike,
             ('bionic', None): self.bionic_queens,
+            ('bionic', 'cloud:bionic-rocky'): self.bionic_rocky,
+            ('cosmic', None): self.cosmic_rocky,
         }
         return releases[(self.series, self.openstack)]
 
@@ -306,6 +308,7 @@ class OpenStackAmuletDeployment(AmuletDeployment):
             ('zesty', 'ocata'),
             ('artful', 'pike'),
             ('bionic', 'queens'),
+            ('cosmic', 'rocky'),
         ])
         if self.openstack:
             os_origin = self.openstack.split(':')[1]
