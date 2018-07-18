@@ -132,7 +132,6 @@ class ODLControllerBasicDeployment(OpenStackAmuletDeployment):
             'glance:shared-db': 'percona-cluster:shared-db',
             'glance:amqp': 'rabbitmq-server:amqp',
             'nova-compute:image-service': 'glance:image-service',
-            'nova-compute:shared-db': 'percona-cluster:shared-db',
             'nova-compute:amqp': 'rabbitmq-server:amqp',
             'nova-cloud-controller:cloud-compute': 'nova-compute:'
                                                    'cloud-compute',
