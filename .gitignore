@@ -1,6 +1,0 @@
-bin
-.testrepository
-.coverage
-.tox
-*.sw[nop]
-*.pyc
